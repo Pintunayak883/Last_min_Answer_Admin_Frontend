@@ -9,7 +9,7 @@ const font = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Admin | Last Min Answers",
+  title: "One Answers Admin",
   description: "Admin dashboard to manage universities, courses, and resources",
 };
 

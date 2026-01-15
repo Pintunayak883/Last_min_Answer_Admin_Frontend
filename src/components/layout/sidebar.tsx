@@ -37,12 +37,10 @@ export function Sidebar() {
     <aside className="flex h-full w-64 flex-col border-r border-slate-200 bg-white">
       <div className="flex items-center gap-2 px-5 py-4 border-b border-slate-200">
         <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-600 text-white font-semibold">
-          LMA
+          OA
         </div>
         <div>
-          <p className="text-sm font-semibold text-slate-900">
-            Last Min Answers
-          </p>
+          <p className="text-sm font-semibold text-slate-900">One Answers</p>
           <p className="text-xs text-slate-500">Admin Console</p>
         </div>
       </div>
