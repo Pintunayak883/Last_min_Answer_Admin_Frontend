@@ -22,16 +22,20 @@ jobs:
           ssh -o StrictHostKeyChecking=no \
           ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
 
-            # Load NVM
+            # Load NVM (non-interactive shell fix)
             export NVM_DIR="$HOME/.nvm"
             [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
 
             cd /var/www/Last_min_Answer_Admin_Frontend
 
-            git reset --hard
-            git pull origin main
+            git fetch origin
+            git reset --hard origin/main
 
+            rm -rf .next node_modules
             npm install
             npm run build
+
+            pm2 restart admin-frontend
+            pm2 save
 
           EOF
