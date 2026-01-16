@@ -22,7 +22,6 @@ jobs:
           ssh -o StrictHostKeyChecking=no \
           ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
 
-            # Load NVM (non-interactive shell fix)
             export NVM_DIR="$HOME/.nvm"
             [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
 
@@ -35,7 +34,8 @@ jobs:
             npm install
             npm run build
 
-            pm2 restart admin-frontend
+            pm2 delete admin-frontend || true
+            pm2 start npm --name "admin-frontend" -- start -- -p 3002
             pm2 save
 
           EOF
