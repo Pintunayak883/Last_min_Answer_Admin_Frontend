@@ -66,15 +66,18 @@ export default function SubjectResourcesPage() {
   }>({});
 
   useEffect(() => {
+    if (!subjectId) return;
     void load();
   }, [subjectId]);
 
   async function load() {
+    if (!subjectId) return;
     setLoading(true);
     try {
       const data = await getSubjectDetail(subjectId);
       setSubject(data);
     } catch (error: any) {
+      setSubject(null);
       toast.error(error.response?.data?.message || "Failed to load subject");
     } finally {
       setLoading(false);
@@ -102,7 +105,7 @@ export default function SubjectResourcesPage() {
       await load();
     } catch (error: any) {
       toast.error(
-        error.message || error.response?.data?.message || "Upload failed"
+        error.message || error.response?.data?.message || "Upload failed",
       );
     } finally {
       setSubmitting((s) => ({ ...s, syllabus: false }));
@@ -133,7 +136,7 @@ export default function SubjectResourcesPage() {
       await load();
     } catch (error: any) {
       toast.error(
-        error.message || error.response?.data?.message || "Upload failed"
+        error.message || error.response?.data?.message || "Upload failed",
       );
     } finally {
       setSubmitting((s) => ({ ...s, paper: false }));
@@ -164,7 +167,7 @@ export default function SubjectResourcesPage() {
       await load();
     } catch (error: any) {
       toast.error(
-        error.message || error.response?.data?.message || "Upload failed"
+        error.message || error.response?.data?.message || "Upload failed",
       );
     } finally {
       setSubmitting((s) => ({ ...s, notes: false }));
@@ -206,7 +209,7 @@ export default function SubjectResourcesPage() {
     );
   }
 
-  const course = subject.term?.course;
+  const course = subject?.term?.course;
   const courseId = subject.term?.courseId ?? "";
   const courseName = course?.name ?? "";
   const universityId = course?.universityId ?? "";
@@ -229,9 +232,9 @@ export default function SubjectResourcesPage() {
         <Button variant="secondary" asChild>
           <Link
             href={`/subjects?courseId=${courseId}&courseName=${encodeURIComponent(
-              courseName
+              courseName,
             )}&universityId=${universityId}&universityName=${encodeURIComponent(
-              universityName
+              universityName,
             )}`}
           >
             Back to subjects
@@ -283,8 +286,8 @@ export default function SubjectResourcesPage() {
                 {submitting.syllabus
                   ? "Uploading..."
                   : subject.syllabus
-                  ? "Replace"
-                  : "Upload"}
+                    ? "Replace"
+                    : "Upload"}
               </Button>
             </div>
           </form>
