@@ -20,6 +20,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ArrowLeft, Upload, Trash } from "lucide-react";
 import Link from "next/link";
+import { getFileUrl } from "@/lib/file-url";
 
 function ensurePdf(file: File) {
   if (file.type !== "application/pdf") {
@@ -28,21 +29,6 @@ function ensurePdf(file: File) {
   if (file.size > 10 * 1024 * 1024) {
     throw new Error("Max file size is 10MB");
   }
-}
-
-// Helper to generate full backend URL for file paths
-function getFileUrl(filePath: string): string {
-  const baseUrl =
-    process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000/api";
-  const serverUrl = baseUrl.replace("/api", "");
-
-  // Normalize Windows backslashes and trim any drive/path prefix before uploads
-  const normalized = filePath.replace(/\\/g, "/");
-  const idx = normalized.toLowerCase().indexOf("uploads");
-  const relative = idx !== -1 ? normalized.substring(idx) : normalized;
-
-  const cleanPath = relative.startsWith("/") ? relative : `/${relative}`;
-  return `${serverUrl}${cleanPath}`;
 }
 
 export default function SubjectResourcesPage() {
@@ -70,6 +56,11 @@ export default function SubjectResourcesPage() {
   }>({});
 
   useEffect(() => {
+    if (!subjectId) {
+      setSubject(null);
+      setLoading(false);
+      return;
+    }
     void load();
   }, [subjectId]);
 
@@ -87,6 +78,7 @@ export default function SubjectResourcesPage() {
 
   async function handleSyllabusSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!subjectId) return toast.error("Missing subject id");
     const form = event.currentTarget;
     const formData = new FormData(form);
     const file = formData.get("file") as File | null;
@@ -106,7 +98,7 @@ export default function SubjectResourcesPage() {
       await load();
     } catch (error: any) {
       toast.error(
-        error.message || error.response?.data?.message || "Upload failed"
+        error.message || error.response?.data?.message || "Upload failed",
       );
     } finally {
       setSubmitting((s) => ({ ...s, syllabus: false }));
@@ -116,6 +108,7 @@ export default function SubjectResourcesPage() {
 
   async function handlePaperSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!subjectId) return toast.error("Missing subject id");
     const form = event.currentTarget;
     const formData = new FormData(form);
     const file = formData.get("file") as File | null;
@@ -137,7 +130,7 @@ export default function SubjectResourcesPage() {
       await load();
     } catch (error: any) {
       toast.error(
-        error.message || error.response?.data?.message || "Upload failed"
+        error.message || error.response?.data?.message || "Upload failed",
       );
     } finally {
       setSubmitting((s) => ({ ...s, paper: false }));
@@ -147,6 +140,7 @@ export default function SubjectResourcesPage() {
 
   async function handleNotesSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!subjectId) return toast.error("Missing subject id");
     const form = event.currentTarget;
     const formData = new FormData(form);
     const file = formData.get("file") as File | null;
@@ -168,7 +162,7 @@ export default function SubjectResourcesPage() {
       await load();
     } catch (error: any) {
       toast.error(
-        error.message || error.response?.data?.message || "Upload failed"
+        error.message || error.response?.data?.message || "Upload failed",
       );
     } finally {
       setSubmitting((s) => ({ ...s, notes: false }));
@@ -204,11 +198,21 @@ export default function SubjectResourcesPage() {
   if (!subject) {
     return (
       <EmptyState
-        title="Subject not found"
-        description="The subject could not be loaded"
+        title={subjectId ? "Subject not found" : "Invalid subject"}
+        description={
+          subjectId
+            ? "The subject could not be loaded"
+            : "Missing or invalid subject id"
+        }
       />
     );
   }
+
+  const syllabusObj =
+    subject?.syllabus && !Array.isArray(subject.syllabus)
+      ? subject.syllabus
+      : null;
+  const syllabusHref = getFileUrl(syllabusObj?.filePath);
 
   const course = subject.term?.course;
 
@@ -278,35 +282,39 @@ export default function SubjectResourcesPage() {
                 <Upload className="mr-2 h-4 w-4" />
                 {submitting.syllabus
                   ? "Uploading..."
-                  : subject.syllabus
-                  ? "Replace"
-                  : "Upload"}
+                  : syllabusObj
+                    ? "Replace"
+                    : "Upload"}
               </Button>
             </div>
           </form>
-          {subject.syllabus ? (
+          {syllabusObj ? (
             <div className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm">
               <div>
                 <p className="font-semibold text-slate-800">Syllabus</p>
                 <p className="text-slate-500">
-                  Year: {subject.syllabus.year || "N/A"}
+                  Year: {syllabusObj?.year || "N/A"}
                 </p>
               </div>
               <div className="flex items-center gap-2">
-                <Button variant="secondary" size="sm" asChild>
-                  <a
-                    href={getFileUrl(subject.syllabus.filePath)}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
+                {syllabusHref ? (
+                  <Button variant="secondary" size="sm" asChild>
+                    <a href={syllabusHref} target="_blank" rel="noreferrer">
+                      View
+                    </a>
+                  </Button>
+                ) : (
+                  <Button variant="secondary" size="sm" disabled>
                     View
-                  </a>
-                </Button>
+                  </Button>
+                )}
                 <Button
                   variant="destructive"
                   size="sm"
                   onClick={() =>
-                    setConfirm({ type: "syllabus", id: subject.syllabus!.id })
+                    syllabusObj?.id
+                      ? setConfirm({ type: "syllabus", id: syllabusObj.id })
+                      : null
                   }
                 >
                   <Trash className="h-4 w-4" />
@@ -419,14 +427,18 @@ export default function SubjectResourcesPage() {
                         {paper.month || "—"}
                       </td>
                       <td className="px-4 py-3 text-slate-600">
-                        <a
-                          className="text-brand-700"
-                          href={getFileUrl(paper.filePath)}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          View PDF
-                        </a>
+                        {getFileUrl(paper.filePath) ? (
+                          <a
+                            className="text-brand-700"
+                            href={getFileUrl(paper.filePath)!}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            View PDF
+                          </a>
+                        ) : (
+                          <span className="text-slate-400">Unavailable</span>
+                        )}
                       </td>
                       <td className="px-4 py-3 text-right">
                         <Button
@@ -533,14 +545,18 @@ export default function SubjectResourcesPage() {
                         {note.title || "—"}
                       </td>
                       <td className="px-4 py-3 text-slate-600">
-                        <a
-                          className="text-brand-700"
-                          href={getFileUrl(note.filePath)}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          View PDF
-                        </a>
+                        {getFileUrl(note.filePath) ? (
+                          <a
+                            className="text-brand-700"
+                            href={getFileUrl(note.filePath)!}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            View PDF
+                          </a>
+                        ) : (
+                          <span className="text-slate-400">Unavailable</span>
+                        )}
                       </td>
                       <td className="px-4 py-3 text-right">
                         <Button
