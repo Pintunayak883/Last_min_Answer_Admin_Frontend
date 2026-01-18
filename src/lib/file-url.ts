@@ -7,8 +7,8 @@ export function getFileUrl(filePath: unknown): string | null {
   // If backend ever returns a full URL, allow it.
   if (/^https?:\/\//i.test(trimmed)) return trimmed;
 
-  const apiBase =
-    process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000/api";
+  const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL;
+  if (!apiBase) return null;
   const serverBase = apiBase.replace(/\/?api\/?$/i, "").replace(/\/$/, "");
 
   const normalized = trimmed.replace(/\\/g, "/");
